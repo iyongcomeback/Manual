@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ABSEN HARIAN TOKO ALI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-blue-200 via-white to-pink-200 min-h-screen font-sans">
+
+<!-- ========== PAGE 1: PILIH MODE ========== -->
+<div id="modePage" class="max-w-xl mx-auto p-6 text-center">
+  <h1 class="text-4xl font-extrabold text-blue-800 mb-6">ABSEN HARIAN TOKO ALI</h1>
+  <p class="mb-6 text-gray-700">Silakan pilih metode absensi:</p>
+  <div class="flex flex-col gap-4">
+    <button onclick="showManualMode()" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl shadow">
+      Mode Manual
+    </button>
+    <button onclick="showBarcodeMode()" class="bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl shadow">
+      Mode Barcode
+    </button>
+  </div>
+</div>
+
+<!-- ========== PAGE 2: LOGIN (kode awal) ========== -->
+<div id="loginPage" class="max-w-xl mx-auto p-6 text-center hidden">
+  <h1 class="text-3xl font-extrabold text-blue-800 mb-6">TOKO ALI</h1>
+
+  <!-- Pilih Nama -->
+  <div class="mb-6">
+    <h2 class="text-lg font-bold mb-2">Pilih Nama</h2>
+    <div class="flex justify-center gap-3 flex-wrap">
+      <button data-name="ADMIN" class="nama-btn bg-white border-2 border-blue-400 text-blue-700 font-semibold py-2 px-4 rounded-xl">ADMIN</button>
+      <button data-name="IYAD"  class="nama-btn bg-white border-2 border-blue-400 text-blue-700 font-semibold py-2 px-4 rounded-xl">IYAD</button>
+      <button data-name="BAYU"  class="nama-btn bg-white border-2 border-blue-400 text-blue-700 font-semibold py-2 px-4 rounded-xl">BAYU</button>
+      <button data-name="GUGUN" class="nama-btn bg-white border-2 border-blue-400 text-blue-700 font-semibold py-2 px-4 rounded-xl">GUGUN</button>
+    </div>
+  </div>
+
+  <!-- Pilih Aksi -->
+  <div class="mb-6">
+    <h2 class="text-lg font-bold mb-2">Pilih Aksi</h2>
+    <div id="aksiButtons" class="flex justify-center gap-4">
+      <button data-action="MASUK" class="aksi-btn bg-white border-2 border-blue-400 text-blue-700 font-semibold py-2 px-6 rounded-xl">MASUK</button>
+      <button data-action="PULANG" class="aksi-btn bg-white border-2 border-pink-400 text-pink-700 font-semibold py-2 px-6 rounded-xl">PULANG</button>
+    </div>
+  </div>
+
+  <!-- Form Kode -->
+  <form id="loginForm">
+    <input type="hidden" id="selectedName" />
+    <input type="hidden" id="selectedAction" />
+    <div class="relative mb-4">
+      <input id="kode" type="password" required placeholder="Masukkan Kode"
+           class="w-full p-3 pr-12 border-2 border-pink-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-pink-500"/>
+    </div>
+    <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 px-6 rounded-full shadow-lg">Masuk</button>
+  </form>
+</div>
+
+<!-- ========== PAGE KARYAWAN: TABEL PRIBADI ========== -->
+<div id="karyawanPage" class="max-w-2xl mx-auto p-6 hidden">
+  <h2 class="text-2xl font-bold text-blue-800 mb-4">
+    <span id="karyawanAction"></span> - <span id="karyawanName"></span>
+  </h2>
+
+  <!-- Input Pendapatan (hanya muncul 1x saat PULANG dan belum pernah isi) -->
+  <div id="pendapatanForm" class="mb-4 hidden">
+    <div class="flex items-center gap-2">
+      <input id="pendapatanInput" type="text" inputmode="numeric"
+             placeholder="Masukkan Pendapatan (otomatis format Rp)"
+             class="p-2 border rounded w-1/2" />
+      <button id="btnSimpanPendapatan" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Simpan</button>
+    </div>
+    <p class="text-xs text-gray-600 mt-1">Hanya bisa diisi sekali untuk shift ini.</p>
+  </div>
+
+  <table class="min-w-full border border-gray-300 bg-white">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="border px-3 py-2">Tanggal</th>
+        <th class="border px-3 py-2">Masuk</th>
+        <th class="border px-3 py-2">Pulang</th>
+        <th class="border px-3 py-2">Pendapatan</th>
+        <th class="border px-3 py-2">Komisi (10%)</th>
+      </tr>
+    </thead>
+    <tbody id="tabelKaryawan"></tbody>
+  </table>
+
+  <div class="mt-4">
+    <button onclick="selesaiKaryawan()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Selesai</button>
+  </div>
+</div>
+
+<!-- ========== (Opsional) PAGE ADMIN: REKAP LOKAL ========== -->
+<div id="adminPage" class="max-w-4xl mx-auto p-6 hidden">
+  <h2 class="text-2xl font-bold text-blue-800 mb-4">Daftar Kehadiran (Lokal)</h2>
+  <table class="min-w-full border border-gray-300 bg-white">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="border px-3 py-2">Nama</th>
+        <th class="border px-3 py-2">Tanggal</th>
+        <th class="border px-3 py-2">Shift</th>
+        <th class="border px-3 py-2">Masuk</th>
+        <th class="border px-3 py-2">Pulang</th>
+        <th class="border px-3 py-2">Pendapatan</th>
+        <th class="border px-3 py-2">Komisi</th>
+      </tr>
+    </thead>
+    <tbody id="tabelAdmin"></tbody>
+  </table>
+  <div class="mt-4 flex gap-2">
+    <button onclick="resetData()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">Reset Data Lokal</button>
+    <button onclick="selesaiAdmin()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Selesai</button>
+  </div>
+</div>
+
+<script>
+/* ==================== NAVIGASI PAGE ==================== */
+function showManualMode(){
+  document.getElementById('modePage').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+}
+function showBarcodeMode(){
+  alert("Fitur Barcode belum diaktifkan.");
+}
+
+/* ==================== STATE & STORAGE ==================== */
+const STORAGE_KEY = 'tokoAli_dataKaryawan_v2';
+let selectedName = "";
+let selectedAction = "";
+let dataKaryawan = {};
+
+function loadLocalData(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  dataKaryawan=raw?JSON.parse(raw):{};
+}
+function saveLocalData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dataKaryawan));
+}
+
+/* ==================== UTIL WAKTU & SHIFT ==================== */
+function getShiftInfo(dateObj){
+  const hour = dateObj.getHours();
+  let shift;
+  let shiftDate = dateObj.toLocaleDateString('id-ID');
+  if(hour >= 7 && hour < 19){
+    shift = "Shift1"; // 07:00 - 19:00
+  } else {
+    shift = "Shift2"; // 19:00 - 07:00 (lintas hari)
+    if(hour < 7){
+      let yesterday = new Date(dateObj);
+      yesterday.setDate(yesterday.getDate() - 1);
+      shiftDate = yesterday.toLocaleDateString('id-ID');
+    }
+  }
+  return {shift, shiftDate};
+}
+function isDuplicateEntry(nama, shift, shiftDate, action){
+  const list = dataKaryawan[nama] || [];
+  const entry = list.find(r => r.shift === shift && r.shiftDate === shiftDate);
+  if(!entry) return false;
+  if(action === "MASUK" && entry.masuk) return true;
+  if(action === "PULANG" && entry.pulang) return true;
+  return false;
+}
+
+/* ==================== UTIL RUPIAH ==================== */
+function onlyDigits(str){ return (str.match(/\d+/g)||[]).join(''); }
+function formatRupiah(numLike){
+  const digits = typeof numLike === 'number' ? String(Math.trunc(numLike)) : onlyDigits(String(numLike||'0'));
+  if(!digits) return 'Rp 0';
+  const parts = digits.split('').reverse();
+  let out=[], count=0;
+  for(const ch of parts){
+    out.push(ch); count++;
+    if(count===3){ out.push('.'); count=0; }
+  }
+  if(out[out.length-1]==='.') out.pop();
+  return 'Rp ' + out.reverse().join('');
+}
+function parseRupiah(str){
+  return Number(onlyDigits(str||'0')); // angka murni
+}
+
+/* ==================== KIRIM KE SPREADSHEET ==================== */
+function sendToSheet(row){
+  if(row.nama === "ADMIN") return; // Admin tidak dikirim
+  const scriptURL = "https://script.google.com/macros/s/AKfycbzLZ1K7C_qq1AMkJs-mQWotbEQ2iATe7xr0U4OV8NDeZjOgaZ8O1pXQ8E6i4YypVZzQlw/exec";
+  const payload = JSON.stringify(row);
+
+  // Utama: JSON (respon bisa dibaca di console jika CORS OK)
+  fetch(scriptURL, { 
+    method: 'POST', 
+    headers: { "Content-Type": "application/json" },
+    body: payload 
+  })
+  .then(r => r.text().then(t => console.log("[GAS] status:", r.status, t)))
+  .catch(err => {
+    console.warn("[GAS] JSON post gagal, retry no-cors...", err);
+    // Cadangan: no-cors (tetap terkirim walau dibuka dari file://, respon opaque)
+    fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: payload })
+      .catch(e2 => console.error("[GAS] no-cors post gagal:", e2));
+  });
+}
+
+/* ==================== PILIH NAMA ==================== */
+document.querySelectorAll('.nama-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    // Reset aksi (warna & disabled)
+    document.querySelectorAll('.aksi-btn').forEach(a=>{
+      a.classList.remove('bg-blue-500','bg-pink-500','text-white');
+      a.classList.add('bg-white');
+      a.disabled = false;
+    });
+
+    // Reset warna nama
+    document.querySelectorAll('.nama-btn').forEach(b=>{
+      b.classList.remove('bg-blue-500','text-white');
+      b.classList.add('bg-white','border-2','border-blue-400','text-blue-700');
+    });
+
+    // Set nama terpilih
+    btn.classList.remove('bg-white','border-blue-400','text-blue-700');
+    btn.classList.add('bg-blue-500','text-white');
+    selectedName = btn.dataset.name;
+    document.getElementById('selectedName').value = selectedName;
+
+    // Aturan untuk Admin
+    if(selectedName === "ADMIN"){
+      const btnMasuk = document.querySelector('.aksi-btn[data-action="MASUK"]');
+      btnMasuk.classList.add('bg-blue-500','text-white');
+      selectedAction = "MASUK";
+      document.getElementById('selectedAction').value = selectedAction;
+      document.querySelector('.aksi-btn[data-action="PULANG"]').disabled = true;
+    } else {
+      selectedAction = "";
+      document.getElementById('selectedAction').value = "";
+    }
+  });
+});
+
+/* ==================== PILIH AKSI ==================== */
+document.querySelectorAll('.aksi-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(!selectedName){alert("Pilih nama dulu.");return;}
+    if(btn.disabled) return;
+    document.querySelectorAll('.aksi-btn').forEach(b=>{
+      b.classList.remove('bg-blue-500','bg-pink-500','text-white');
+      b.classList.add('bg-white');
+    });
+    if(btn.dataset.action==="MASUK"){btn.classList.add('bg-blue-500','text-white');}
+    if(btn.dataset.action==="PULANG"){btn.classList.add('bg-pink-500','text-white');}
+    selectedAction=btn.dataset.action;
+    document.getElementById('selectedAction').value=selectedAction;
+  });
+});
+
+/* ==================== VALIDASI KODE ==================== */
+const validCodes={
+  "ADMIN":["admin","Admin","ADMIN","1"],
+  "IYAD":["001","kry001","KRY001","1"],
+  "BAYU":["002","kry002","KRY002","2"],
+  "GUGUN":["003","kry003","KRY003","3"]
+};
+
+/* ==================== SUBMIT LOGIN ==================== */
+document.getElementById('loginForm').addEventListener('submit',(e)=>{
+  e.preventDefault();
+  const kode=document.getElementById('kode').value.trim();
+  if(!selectedName||!selectedAction){alert('Pilih nama dan aksi.');return;}
+  if(!validCodes[selectedName] || !validCodes[selectedName].includes(kode)){
+    alert('Kode salah!');return;
+  }
+
+  const now = new Date();
+  const {shift, shiftDate} = getShiftInfo(now);
+  const today = now.toLocaleDateString('id-ID');
+  const timeNow = now.toLocaleTimeString('id-ID');
+
+  const isAdmin = (selectedName === "ADMIN");
+  const duplicate = (!isAdmin) && isDuplicateEntry(selectedName, shift, shiftDate, selectedAction);
+
+  // Jika duplikat → hanya tampilkan tabel + popup (karyawan saja)
+  if(duplicate){
+    alert("kamu sudah masuk hari ini, jangan dobel ya.!");
+  } else {
+    // Siapkan data lokal
+    if(!dataKaryawan[selectedName]) dataKaryawan[selectedName] = [];
+    let entry = dataKaryawan[selectedName].find(r => r.shift === shift && r.shiftDate === shiftDate);
+    if(!entry){
+      entry = {shift, shiftDate, tanggal: today, pendapatanLocked: false};
+      dataKaryawan[selectedName].push(entry);
+    }
+    // Set jam
+    if(selectedAction === "MASUK" && !entry.masuk) entry.masuk = timeNow;
+    if(selectedAction === "PULANG" && !entry.pulang) entry.pulang = timeNow;
+
+    // Kirim ke Sheets HANYA untuk karyawan & bukan duplikat
+    if(!isAdmin){
+      sendToSheet({
+        nama: selectedName,
+        tanggal: entry.tanggal,
+        shift: entry.shift,
+        masuk: entry.masuk || "",
+        pulang: entry.pulang || "",
+        pendapatan: entry.pendapatan || "",
+        komisi: entry.komisi || ""
+      });
+    }
+    saveLocalData();
+  }
+
+  // Arahkan ke halaman sesuai role
+  document.getElementById('loginPage').classList.add('hidden');
+  if(isAdmin){
+    document.getElementById('adminPage').classList.remove('hidden');
+    renderAdminTable();
+  } else {
+    renderKaryawanTable(selectedName);
+    document.getElementById('karyawanPage').classList.remove('hidden');
+    document.getElementById('karyawanName').innerText = selectedName;
+    document.getElementById('karyawanAction').innerText = selectedAction;
+
+    // Tampilkan input pendapatan hanya saat PULANG & belum pernah isi (1x)
+    const {shift, shiftDate} = getShiftInfo(new Date());
+    const ent = (dataKaryawan[selectedName]||[]).find(r=>r.shift===shift && r.shiftDate===shiftDate);
+    if(ent && selectedAction==="PULANG" && !ent.pendapatanLocked){
+      document.getElementById('pendapatanForm').classList.remove('hidden');
+      document.getElementById('pendapatanInput').value = ""; // kosongkan
+    } else {
+      document.getElementById('pendapatanForm').classList.add('hidden');
+    }
+  }
+
+  // bersihkan input kode
+  document.getElementById('kode').value = '';
+});
+
+/* ==================== INPUT PENDAPATAN (1x) ==================== */
+document.getElementById('pendapatanInput').addEventListener('input', (e)=>{
+  const formatted = formatRupiah(e.target.value);
+  e.target.value = formatted;
+  e.target.setSelectionRange(formatted.length, formatted.length);
+});
+
+document.getElementById('btnSimpanPendapatan').addEventListener('click', ()=>{
+  const nama = document.getElementById('karyawanName').innerText;
+  const val = document.getElementById('pendapatanInput').value;
+  const angka = parseRupiah(val);
+  if(angka<=0){ alert("Pendapatan tidak valid."); return; }
+
+  const {shift, shiftDate} = getShiftInfo(new Date());
+  const list = dataKaryawan[nama] || [];
+  const entry = list.find(r => r.shift===shift && r.shiftDate===shiftDate);
+  if(!entry){ alert("Data shift tidak ditemukan."); return; }
+  if(entry.pendapatanLocked){ alert("Pendapatan sudah terkunci untuk shift ini."); return; }
+
+  entry.pendapatan = formatRupiah(angka);
+  entry.komisi = formatRupiah(Math.round(angka * 0.10));
+  entry.pendapatanLocked = true; // kunci agar 1x saja
+  saveLocalData();
+
+  // Kirim update ke Sheets (opsional) — jika ingin kirim saat simpan pendapatan:
+  sendToSheet({
+    nama,
+    tanggal: entry.tanggal,
+    shift: entry.shift,
+    masuk: entry.masuk || "",
+    pulang: entry.pulang || "",
+    pendapatan: entry.pendapatan || "",
+    komisi: entry.komisi || ""
+  });
+
+  // Sembunyikan form dan refresh tabel
+  document.getElementById('pendapatanForm').classList.add('hidden');
+  renderKaryawanTable(nama);
+});
+
+/* ==================== RENDER TABEL ==================== */
+function renderKaryawanTable(nama){
+  const tbody=document.getElementById('tabelKaryawan');
+  tbody.innerHTML='';
+  (dataKaryawan[nama]||[]).forEach(row=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td class="border px-3 py-2">${row.tanggal||''}</td>
+        <td class="border px-3 py-2">${row.masuk||''}</td>
+        <td class="border px-3 py-2">${row.pulang||''}</td>
+        <td class="border px-3 py-2">${row.pendapatan||''}</td>
+        <td class="border px-3 py-2">${row.komisi||''}</td>
+      </tr>`;
+  });
+}
+
+function renderAdminTable(){
+  const tbody=document.getElementById('tabelAdmin');
+  tbody.innerHTML='';
+  Object.keys(dataKaryawan).forEach(nama=>{
+    if(nama === "ADMIN") return; // Jangan tampilkan Admin
+    (dataKaryawan[nama]||[]).forEach(row=>{
+      tbody.innerHTML+=`
+        <tr>
+          <td class="border px-3 py-2">${nama}</td>
+          <td class="border px-3 py-2">${row.tanggal||''}</td>
+          <td class="border px-3 py-2">${row.shift||''}</td>
+          <td class="border px-3 py-2">${row.masuk||''}</td>
+          <td class="border px-3 py-2">${row.pulang||''}</td>
+          <td class="border px-3 py-2">${row.pendapatan||''}</td>
+          <td class="border px-3 py-2">${row.komisi||''}</td>
+        </tr>`;
+    });
+  });
+}
+
+/* ==================== RESET & SELESAI ==================== */
+function resetData(){
+  if(confirm("Hapus semua data lokal?")){
+    dataKaryawan = {};
+    saveLocalData();
+    renderAdminTable();
+    alert("Data lokal dihapus (Spreadsheet tetap aman).");
+  }
+}
+function selesaiKaryawan(){
+  document.getElementById('karyawanPage').classList.add('hidden');
+  document.getElementById('modePage').classList.remove('hidden');
+}
+function selesaiAdmin(){
+  document.getElementById('adminPage').classList.add('hidden');
+  document.getElementById('modePage').classList.remove('hidden');
+}
+
+/* ==================== INIT ==================== */
+loadLocalData();
+</script>
+</body>
+</html>
